@@ -179,7 +179,7 @@ function convertConfigrocksToHashRegister()
 end
 
 function doNothingAndWait()
-    Citizen.Wait(500)
+    Citizen.Wait(1000)
 end
 
 ---@param rock table
@@ -277,7 +277,7 @@ AddEventHandler("vorp_mining:nopickaxe", function()
 end)
 
 function goMine(rock)
-    EquipTool('p_pickaxe01x', 'Schwingen')
+    EquipTool('p_pickaxe01x', 'Swing')
     local swing = 0
     local swingcount = math.random(Config.MinSwing, Config.MaxSwing)
     while hastool == true do
