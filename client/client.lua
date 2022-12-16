@@ -1,8 +1,15 @@
 local MinePrompt
 local active = false
 local sleep = true
+local tool, hastool, UsePrompt, PropPrompt
+local swing = 0
+
+---@type table<string,boolean>
 local MinedRocks = {}
+
+---@type table
 local nearby_rocks
+
 local currently_in_restricted_town = false
 
 local rockGroup = GetRandomIntInRange(0, 0xffffff)
@@ -26,7 +33,7 @@ end
 ---@param radius number
 ---@param hash_filter table
 ---@return table,nil
-function GetrockNearby(coords, radius, hash_filter)
+function GetRockNearby(coords, radius, hash_filter)
 
     local itemSet = CreateItemset(true)
     local size = Citizen.InvokeNative(0x59B57C4B06531E1E, coords, radius, itemSet, 3, Citizen.ResultAsInteger())
@@ -65,7 +72,7 @@ end
 
 ---@param player number
 ---@return boolean
-function isPlayerReadyToChoprocks(player)
+function isPlayerReadyToMineRocks(player)
 
     if IsPedOnMount(player) then
         return false
@@ -94,10 +101,37 @@ function isPlayerReadyToChoprocks(player)
     return true
 end
 
----@param coords table
+---@param coords table<number>
+---@return string
+function coordsToString(coords)
+    return round(coords[1], 1) .. '-' .. round(coords[2], 1) .. '-' .. round(coords[3], 1)
+end
+
+---@param coords table<number>
 ---@return boolean
-function isrockAlreadyMining(coords)
-    return InArray(MinedRocks, tostring(coords)) == true
+function isRockAlreadyMined(coords)
+
+    local coords_string = coordsToString(coords)
+
+    local result = MinedRocks[coords_string] == true
+
+    --print('isRockAlreadyMined', coords_string, result)
+
+    return result
+end
+
+---@param coords table<number>
+function rememberRockAsMined(coords)
+    local coords_string = coordsToString(coords)
+    MinedRocks[coords_string] = true
+    --print('rememberRockAsMined', coords_string)
+end
+
+---@param coords table<number>
+function forgetRockAsMined(coords)
+    local coords_string = coordsToString(coords)
+    MinedRocks[coords_string] = nil
+    --print('forgetRockAsMined', coords_string)
 end
 
 ---@param restricted_towns table
@@ -124,7 +158,7 @@ end
 ---@param allowed_model_hashes table
 ---@param player number Optional
 ---@param player_coords table Optional
-function getUnMiningNearbyrock(allowed_model_hashes, player, player_coords)
+function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
 
     player = player or PlayerPedId()
 
@@ -134,13 +168,13 @@ function getUnMiningNearbyrock(allowed_model_hashes, player, player_coords)
 
     player_coords = player_coords or GetEntityCoords(player)
 
-    local found_nearby_rocks = GetrockNearby(player_coords, 1.3, allowed_model_hashes)
+    local found_nearby_rocks = GetRockNearby(player_coords, 1.3, allowed_model_hashes)
 
     if not found_nearby_rocks then
         return nil
     end
 
-    if isrockAlreadyMining(found_nearby_rocks.vector_coords) then
+    if isRockAlreadyMined(found_nearby_rocks.vector_coords) then
         return nil
     end
 
@@ -153,20 +187,20 @@ function showStartMineBtn()
 end
 
 ---@param rock table
-function checkStartChopBtnPressed(rock)
+function checkStartMineBtnPressed(rock)
 
     if PromptHasHoldModeCompleted(MinePrompt) then
         active = true
         local player = PlayerPedId()
         SetCurrentPedWeapon(player, GetHashKey("WEAPON_UNARMED"), true, 0, false, false)
         Citizen.Wait(500)
-        TriggerServerEvent("vorp_mining:pickaxecheck", tostring(rock.vector_coords))
+        TriggerServerEvent("vorp_mining:pickaxecheck", rock.vector_coords)
     end
 
 end
 
 ---@return table
-function convertConfigrocksToHashRegister()
+function convertConfigRocksToHashRegister()
 
     local model_hashes = {}
 
@@ -179,7 +213,7 @@ function convertConfigrocksToHashRegister()
 end
 
 function doNothingAndWait()
-    Citizen.Wait(1000)
+    Citizen.Wait(500)
 end
 
 ---@param rock table
@@ -187,7 +221,7 @@ function waitForStartKey(rock)
 
     showStartMineBtn()
 
-    checkStartChopBtnPressed(rock)
+    checkStartMineBtnPressed(rock)
 
     Citizen.Wait(0)
 end
@@ -230,7 +264,7 @@ end
 
 Citizen.CreateThread(function()
 
-    local allowed_rock_model_hashes = convertConfigrocksToHashRegister()
+    local allowed_rock_model_hashes = convertConfigRocksToHashRegister()
 
     local restricted_towns = convertConfigTownRestrictionsToHashRegister()
 
@@ -241,9 +275,9 @@ Citizen.CreateThread(function()
             local player = PlayerPedId()
             local player_coords = GetEntityCoords(player)
 
-            nearby_rocks = getUnMiningNearbyrock(allowed_rock_model_hashes, player, player_coords)
+            nearby_rocks = getUnMinedNearbyRock(allowed_rock_model_hashes, player, player_coords)
 
-            if nearby_rocks then
+            if nearby_rocks and not isRockAlreadyMined(nearby_rocks.vector_coords) then
                 manageStartMinePrompt(restricted_towns, player_coords)
             end
         end
@@ -276,21 +310,71 @@ AddEventHandler("vorp_mining:nopickaxe", function()
     active = false
 end)
 
+function releasePlayer()
+
+    if PropPrompt then
+        PromptSetEnabled(PropPrompt, false)
+        PromptSetVisible(PropPrompt, false)
+    end
+
+    if UsePrompt then
+        PromptSetEnabled(UsePrompt, false)
+        PromptSetVisible(UsePrompt, false)
+    end
+
+    FreezeEntityPosition(PlayerPedId(), false)
+end
+
+function removeMiningPrompt()
+
+    if MinePrompt then
+        PromptSetEnabled(MinePrompt, false)
+        PromptSetVisible(MinePrompt, false)
+    end
+end
+
+---@param rock table<number>
+function rockFinished(rock)
+
+    swing = 0
+
+    rememberRockAsMined(rock)
+    Wait(2300)
+    removeToolFromPlayer()
+
+    active = false
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(1800000)
+        forgetRockAsMined(rock)
+    end)
+end
+
+function removeToolFromPlayer()
+
+    hastool = false
+
+    if not tool then
+        return
+    end
+
+    Citizen.InvokeNative(0xED00D72F81CF7278, tool, 1, 1)
+    DeleteObject(tool)
+    Citizen.InvokeNative(0x58F7DB5BD8FA2288, PlayerPedId()) -- Cancel Walk Style
+
+    tool = nil
+end
+
 function goMine(rock)
     EquipTool('p_pickaxe01x', 'Swing')
-    local swing = 0
     local swingcount = math.random(Config.MinSwing, Config.MaxSwing)
     while hastool == true do
         FreezeEntityPosition(PlayerPedId(), true)
-        if IsControlJustReleased(10, Config.StopMiningKey) or IsPedDeadOrDying(PlayerPedId()) then
-            swing = 0
-            table.insert(MinedRocks, tostring(prop))
-            hastool = false
-            Citizen.InvokeNative(0xED00D72F81CF7278, tool, 1, 1)
-            DeleteObject(tool)
-            Citizen.InvokeNative(0x58F7DB5BD8FA2288, ped) -- Cancel Walk Style
-            active = false
+        if IsControlJustReleased(0, Config.StopMiningKey) or IsPedDeadOrDying(PlayerPedId()) then
+            rockFinished(rock)
         elseif IsControlJustPressed(0, Config.MineRockKey) then
+            PromptSetEnabled(UsePrompt, false)
+            swing = swing + 1
             local randomizer =  math.random(Config.maxDifficulty,Config.minDifficulty)
             swing = swing + 1
             Anim(ped,'amb_work@world_human_pickaxe_new@working@male_a@trans','pre_swing_trans_after_swing',-1,0)
@@ -303,27 +387,16 @@ function goMine(rock)
                 TriggerEvent("vorp:TipRight", minning_fail_txt, 3000)
             end
             Wait(500)
+            PromptSetEnabled(UsePrompt, true)
         end
 
         if swing == swingcount then
-            table.insert(MinedRocks, tostring(rock))
-            swing = 0
-            hastool = false
-            Citizen.InvokeNative(0xED00D72F81CF7278, tool, 1, 1)
-            DeleteObject(tool)
-            Citizen.InvokeNative(0x58F7DB5BD8FA2288, ped) -- Cancel Walk Style
-            Citizen.CreateThread(function()
-                Citizen.Wait(300000)
-                table.remove(MinedRocks, GetArrayKey(MinedRocks, tostring(rock)))
-            end)
+            PromptSetEnabled(UsePrompt, false)
+            rockFinished(rock)
         end
         Wait(5)
     end
-    PromptSetEnabled(PropPrompt, false)
-    PromptSetVisible(PropPrompt, false)
-    PromptSetEnabled(UsePrompt, false)
-    PromptSetVisible(UsePrompt, false)
-    FreezeEntityPosition(PlayerPedId(), false)
+    releasePlayer()
     active = false
 end
 
@@ -428,3 +501,27 @@ function InArray(array, item)
     end
     return false
 end
+
+---@param num number
+---@param decimals number
+---@return number
+function round(num, decimals)
+
+    if type(num) ~= "number" then
+        return num
+    end
+
+    local multiplier = 10^(decimals or 0)
+    return math.floor(num * multiplier + 0.5) / multiplier
+end
+
+AddEventHandler('onResourceStop', function(resourceName)
+
+    if (GetCurrentResourceName() ~= resourceName) then
+        return
+    end
+
+    removeToolFromPlayer()
+    releasePlayer()
+    removeMiningPrompt()
+end)
