@@ -8,6 +8,7 @@ end)
 
 RegisterServerEvent("vorp_mining:pickaxecheck")
 AddEventHandler("vorp_mining:pickaxecheck", function(rock)
+	math.randomseed(os.time())
 	local _source = source
 	local miningrock = rock
 	local pickaxe = VorpInv.getItem(_source, Config.Pickaxe)
@@ -51,9 +52,10 @@ end
 
 RegisterServerEvent('vorp_mining:addItem')
 AddEventHandler('vorp_mining:addItem', function()
+	math.randomseed(os.time())
 	local _source = source
 	local Character = VorpCore.getUser(_source).getUsedCharacter
-	local chance =  math.random(1,10)
+	local chance =  math.random(1,20)
 	local reward = {}
 	for k,v in pairs(Config.Items) do 
 		if v.chance >= chance then

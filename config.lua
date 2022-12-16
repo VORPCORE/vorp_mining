@@ -42,10 +42,10 @@ Config.TownRestrictions = {
 }
 
 Config.Items = {
-    {name = "clay", label = "Clay", chance = 8, amount = 4},
-    {name = "coal", label = "Coal", chance = 8, amount = 4},
-    {name = "copper", label = "Copper", chance = 6, amount = 8},
-    {name = "iron", label = "Iron", chance = 6, amount = 12},
+    {name = "clay", label = "Clay", chance = 20, amount = 4},
+    {name = "coal", label = "Coal", chance = 15, amount = 4},
+    {name = "copper", label = "Copper", chance = 10, amount = 8},
+    {name = "iron", label = "Iron", chance = 20, amount = 12},
     {name = "nitrite", label = "Nitrite", chance = 8, amount = 4},
     {name = "rock", label = "Rocks", chance = 10, amount = 4},
     {name = "salt", label = "Salt", chance = 10, amount = 4},

@@ -4,6 +4,7 @@ Mining script
 
 ## 1. Requirements
 - [VORP-Core](https://github.com/VORPCORE/vorp-core-lua)
+- syn_minigame
 
 ## 2. insallation
 `ensure vorp_mining` in your resources.cfg
