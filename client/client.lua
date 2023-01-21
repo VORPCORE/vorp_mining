@@ -162,7 +162,7 @@ function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
 
     player = player or PlayerPedId()
 
-    if not isPlayerReadyToChoprocks(player) then
+    if not isPlayerReadyToMineRocks(player) then
         return nil
     end
 
@@ -374,7 +374,6 @@ function goMine(rock)
             rockFinished(rock)
         elseif IsControlJustPressed(0, Config.MineRockKey) then
             PromptSetEnabled(UsePrompt, false)
-            swing = swing + 1
             local randomizer =  math.random(Config.maxDifficulty,Config.minDifficulty)
             swing = swing + 1
             Anim(ped,'amb_work@world_human_pickaxe_new@working@male_a@trans','pre_swing_trans_after_swing',-1,0)
