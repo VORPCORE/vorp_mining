@@ -42,19 +42,21 @@ AddEventHandler("vorp_mining:pickaxecheck", function(rock)
 	end
 end)
 
-function keysx(table)
+local keysx = function(table)
     local keys = 0
+
     for k,v in pairs(table) do
        keys = keys + 1
     end
+
     return keys
 end
 
 RegisterServerEvent('vorp_mining:addItem')
 AddEventHandler('vorp_mining:addItem', function()
-	math.randomseed(os.time())
+	--math.randomseed(os.time()) -- why s this even here? 
 	local _source = source
-	local Character = VorpCore.getUser(_source).getUsedCharacter
+	--local Character = VorpCore.getUser(_source).getUsedCharacter -- why is this even here ?
 	local chance =  math.random(1,20)
 	local reward = {}
 	for k,v in pairs(Config.Items) do 
@@ -62,7 +64,13 @@ AddEventHandler('vorp_mining:addItem', function()
 			table.insert(reward,v)
 		end
 	end
-	local chance2 = math.random(1,keysx(reward))
+
+        local randomtotal = keysx(reward) -- localize 
+	if randomtotal == 0 then -- if 0 add at least 1 or maybe do a return
+		--randomtotal = 1 -- ensure its not 0 so it doesnt throw error, you can uncomment so players get at least one 
+           return -- dont run amount is 0 , comment if the top one is uncommented
+	end
+	local chance2 = math.random(1,amount2) -- if 0 the interval will be empty since minimum is 1
 	local count = math.random(1,reward[chance2].amount)
 	TriggerEvent("vorpCore:canCarryItems", tonumber(_source), count, function(canCarry)
 		TriggerEvent("vorpCore:canCarryItem", tonumber(_source), reward[chance2].name,count, function(canCarry2)
