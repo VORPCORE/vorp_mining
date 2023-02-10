@@ -66,11 +66,11 @@ AddEventHandler('vorp_mining:addItem', function()
 	end
 
         local randomtotal = keysx(reward) -- localize 
-	if randomtotal == 0 then -- if 0 add at least 1 or maybe do a return
+	if randomtotal and randomtotal == 0  then -- if 0 add at least add 1 or maybe do a return
 		--randomtotal = 1 -- ensure its not 0 so it doesnt throw error, you can uncomment so players get at least one 
            return -- dont run amount is 0 , comment if the top one is uncommented
 	end
-	local chance2 = math.random(1,amount2) -- if 0 the interval will be empty since minimum is 1
+	local chance2 = math.random(1,randomtotal) -- if 0 the interval will be empty since minimum is 1
 	local count = math.random(1,reward[chance2].amount)
 	TriggerEvent("vorpCore:canCarryItems", tonumber(_source), count, function(canCarry)
 		TriggerEvent("vorpCore:canCarryItem", tonumber(_source), reward[chance2].name,count, function(canCarry2)
