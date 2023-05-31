@@ -146,7 +146,7 @@ Translation.Langs = {
             descDurabilityTwo = "Haltbarkeit = ",
         },
     },
-    Espanol = {
+    Spanish = {
         [1] = "¡Idiota, cuidado!",
         [2] = "Ups, casi me pega en el pie...",
         [3] = "¡Ya deberías haber dado en la roca!",
