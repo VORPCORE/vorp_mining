@@ -10,7 +10,7 @@ Mining script
 
 ## 2. insallation
 
-- `ensure vorp_lumberjack` in your resources.cfg
+- `ensure vorp_mining` in your resources.cfg
 - `ensure syn_minigame` in your resources.cfg
 
 ## 3. features
