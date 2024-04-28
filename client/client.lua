@@ -1,31 +1,29 @@
 local MinePrompt
 local active = false
-local sleep = true
 local tool, hastool, UsePrompt, PropPrompt
 local swing = 0
 local MinedRocks = {}
 local nearby_rocks
-
 local rockGroup = GetRandomIntInRange(0, 0xffffff)
+local T = Translation.Langs[Lang]
 
-T = Translation.Langs[Lang]
 
-function CreateStartMinePrompt()
-    Citizen.CreateThread(function()
-        local str = T.PromptLabels.mineLabel
-        MinePrompt = Citizen.InvokeNative(0x04F97DE45A519419)
-        PromptSetControlAction(MinePrompt, Config.MinePromptKey)
-        str = CreateVarString(10, 'LITERAL_STRING', str)
-        PromptSetText(MinePrompt, str)
-        PromptSetEnabled(MinePrompt, true)
-        PromptSetVisible(MinePrompt, true)
-        PromptSetHoldMode(MinePrompt, true)
-        PromptSetGroup(MinePrompt, rockGroup)
-        PromptRegisterEnd(MinePrompt)
-    end)
-end
+CreateThread(function()
+    repeat Wait(1000) until LocalPlayer.state.IsInSession
+    local str = T.PromptLabels.mineLabel
+    MinePrompt = Citizen.InvokeNative(0x04F97DE45A519419)
+    PromptSetControlAction(MinePrompt, Config.MinePromptKey)
+    str = CreateVarString(10, 'LITERAL_STRING', str)
+    PromptSetText(MinePrompt, str)
+    PromptSetEnabled(MinePrompt, true)
+    PromptSetVisible(MinePrompt, true)
+    PromptSetHoldMode(MinePrompt, true)
+    PromptSetGroup(MinePrompt, rockGroup)
+    PromptRegisterEnd(MinePrompt)
+end)
 
-function GetRockNearby(coords, radius, hash_filter)
+
+local function GetRockNearby(coords, radius, hash_filter)
     local itemSet = CreateItemset(true)
     local size = Citizen.InvokeNative(0x59B57C4B06531E1E, coords, radius, itemSet, 3, Citizen.ResultAsInteger())
     local found_entity
@@ -61,16 +59,16 @@ function GetRockNearby(coords, radius, hash_filter)
     return found_entity
 end
 
-function isPlayerReadyToMineRocks(player)
+local function isPlayerReadyToMineRocks(player)
     if IsPedOnMount(player) then
         return false
     end
 
-    if IsPedInAnyVehicle(player) then
+    if IsPedInAnyVehicle(player, false) then
         return false
     end
 
-    if IsPedDeadOrDying(player) then
+    if IsPedDeadOrDying(player, false) then
         return false
     end
 
@@ -89,27 +87,31 @@ function isPlayerReadyToMineRocks(player)
     return true
 end
 
-function coordsToString(coords)
-    return round(coords[1], 1) .. '-' .. round(coords[2], 1) .. '-' .. round(coords[3], 1)
+local function coordsToString(coords)
+    return Round(coords[1], 1) .. '-' .. Round(coords[2], 1) .. '-' .. Round(coords[3], 1)
 end
 
-function isRockAlreadyMined(coords)
+local function isRockAlreadyMined(coords)
     local coords_string = coordsToString(coords)
     local result = MinedRocks[coords_string] == true
     return result
 end
 
-function rememberRockAsMined(coords)
+local function rememberRockAsMined(coords)
     local coords_string = coordsToString(coords)
     MinedRocks[coords_string] = true
 end
 
-function forgetRockAsMined(coords)
+local function forgetRockAsMined(coords)
     local coords_string = coordsToString(coords)
     MinedRocks[coords_string] = nil
 end
 
-function isInRestrictedTown(restricted_towns, player_coords)
+local function GetTown(x, y, z)
+    return Citizen.InvokeNative(0x43AD8FC02B429D33, x, y, z, 1)
+end
+
+local function isInRestrictedTown(restricted_towns, player_coords)
     player_coords = player_coords or GetEntityCoords(PlayerPedId())
 
     local x, y, z = table.unpack(player_coords)
@@ -126,7 +128,7 @@ function isInRestrictedTown(restricted_towns, player_coords)
     return false
 end
 
-function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
+local function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
     player = player or PlayerPedId()
 
     if not isPlayerReadyToMineRocks(player) then
@@ -148,22 +150,22 @@ function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
     return found_nearby_rocks
 end
 
-function showStartMineBtn()
+local function showStartMineBtn()
     local MiningGroupName = CreateVarString(10, 'LITERAL_STRING', T.PromptLabels.mineDesc)
     PromptSetActiveGroupThisFrame(rockGroup, MiningGroupName)
 end
 
-function checkStartMineBtnPressed(rock)
+local function checkStartMineBtnPressed(rock)
     if PromptHasHoldModeCompleted(MinePrompt) then
         active = true
         local player = PlayerPedId()
         SetCurrentPedWeapon(player, GetHashKey("WEAPON_UNARMED"), true, 0, false, false)
-        Citizen.Wait(500)
+        Wait(500)
         TriggerServerEvent("vorp_mining:pickaxecheck", rock.vector_coords)
     end
 end
 
-function convertConfigRocksToHashRegister()
+local function convertConfigRocksToHashRegister()
     local model_hashes = {}
 
     for _, model_name in pairs(Config.Rocks) do
@@ -174,23 +176,13 @@ function convertConfigRocksToHashRegister()
     return model_hashes
 end
 
-function doNothingAndWait()
-    Citizen.Wait(500)
-end
-
-function waitForStartKey(rock)
+local function waitForStartKey(rock)
     showStartMineBtn()
-
     checkStartMineBtnPressed(rock)
-
-    Citizen.Wait(0)
+    Wait(0)
 end
 
-function GetTown(x, y, z)
-    return Citizen.InvokeNative(0x43AD8FC02B429D33, x, y, z, 1)
-end
-
-function convertConfigTownRestrictionsToHashRegister()
+local function convertConfigTownRestrictionsToHashRegister()
     local restricted_towns = {}
 
     for _, town_restriction in pairs(Config.TownRestrictions) do
@@ -203,7 +195,7 @@ function convertConfigTownRestrictionsToHashRegister()
     return restricted_towns
 end
 
-function manageStartMinePrompt(restricted_towns, player_coords)
+local function manageStartMinePrompt(restricted_towns, player_coords)
     local is_promp_enabled = true
 
     if isInRestrictedTown(restricted_towns, player_coords) then
@@ -212,9 +204,10 @@ function manageStartMinePrompt(restricted_towns, player_coords)
     PromptSetEnabled(MinePrompt, is_promp_enabled)
 end
 
-Citizen.CreateThread(function()
-    local allowed_rock_model_hashes = convertConfigRocksToHashRegister()
+CreateThread(function()
+    repeat Wait(1000) until LocalPlayer.state.IsInSession
 
+    local allowed_rock_model_hashes = convertConfigRocksToHashRegister()
     local restricted_towns = convertConfigTownRestrictionsToHashRegister()
 
     while true do
@@ -228,34 +221,30 @@ Citizen.CreateThread(function()
                 manageStartMinePrompt(restricted_towns, player_coords)
             end
         end
-
-        doNothingAndWait()
+        Wait(500)
     end
 end)
 
-Citizen.CreateThread(function()
-    CreateStartMinePrompt()
-
+CreateThread(function()
+    repeat Wait(1000) until LocalPlayer.state.IsInSession
     while true do
         if active == false and nearby_rocks then
             waitForStartKey(nearby_rocks)
         else
-            doNothingAndWait()
+            Wait(500)
         end
     end
 end)
 
-RegisterNetEvent("vorp_mining:pickaxechecked")
-AddEventHandler("vorp_mining:pickaxechecked", function(rock)
-    goMine(rock)
+RegisterNetEvent("vorp_mining:pickaxechecked", function(rock)
+    GoMine(rock)
 end)
 
-RegisterNetEvent("vorp_mining:nopickaxe")
-AddEventHandler("vorp_mining:nopickaxe", function()
+RegisterNetEvent("vorp_mining:nopickaxe", function()
     active = false
 end)
 
-function releasePlayer()
+local function releasePlayer()
     if PropPrompt then
         PromptSetEnabled(PropPrompt, false)
         PromptSetVisible(PropPrompt, false)
@@ -269,29 +258,14 @@ function releasePlayer()
     FreezeEntityPosition(PlayerPedId(), false)
 end
 
-function removeMiningPrompt()
+local function removeMiningPrompt()
     if MinePrompt then
         PromptSetEnabled(MinePrompt, false)
         PromptSetVisible(MinePrompt, false)
     end
 end
 
-function rockFinished(rock)
-    swing = 0
-
-    rememberRockAsMined(rock)
-    Wait(2300)
-    removeToolFromPlayer()
-
-    active = false
-
-    Citizen.CreateThread(function()
-        Citizen.Wait(1800000)
-        forgetRockAsMined(rock)
-    end)
-end
-
-function removeToolFromPlayer()
+local function removeToolFromPlayer()
     hastool = false
 
     if not tool then
@@ -305,12 +279,27 @@ function removeToolFromPlayer()
     tool = nil
 end
 
-function goMine(rock)
+local function rockFinished(rock)
+    swing = 0
+
+    rememberRockAsMined(rock)
+    Wait(2300)
+    removeToolFromPlayer()
+
+    active = false
+
+    SetTimeout(1800000, function()
+        forgetRockAsMined(rock)
+    end)
+end
+
+
+function GoMine(rock)
     EquipTool('p_pickaxe01x', 'Swing')
     local swingcount = math.random(Config.MinSwing, Config.MaxSwing)
     while hastool == true do
         FreezeEntityPosition(PlayerPedId(), true)
-        if IsControlJustReleased(0, Config.StopMiningKey) or IsPedDeadOrDying(PlayerPedId()) then
+        if IsControlJustReleased(0, Config.StopMiningKey) or IsPedDeadOrDying(PlayerPedId(), false) then
             rockFinished(rock)
         elseif IsControlJustPressed(0, Config.MineRockKey) then
             PromptSetEnabled(UsePrompt, false)
@@ -333,7 +322,7 @@ function goMine(rock)
             PromptSetEnabled(UsePrompt, false)
             rockFinished(rock)
         end
-        Wait(5)
+        Wait(0)
     end
     releasePlayer()
     active = false
@@ -354,9 +343,8 @@ function EquipTool(toolhash, prompttext, holdtowork)
     Citizen.InvokeNative(0x923583741DC87BCE, ped, 'arthur_healthy')
     Citizen.InvokeNative(0x89F5E7ADECCCB49C, ped, "carry_pitchfork")
     Citizen.InvokeNative(0x2208438012482A1A, ped, true, true)
-    ForceEntityAiAndAnimationUpdate(tool, 1)
+    ForceEntityAiAndAnimationUpdate(tool, true)
     Citizen.InvokeNative(0x3A50753042B6891B, ped, "PITCH_FORKS")
-
     Wait(500)
     PromptSetEnabled(PropPrompt, true)
     PromptSetVisible(PropPrompt, true)
@@ -367,8 +355,7 @@ function EquipTool(toolhash, prompttext, holdtowork)
 end
 
 function FPrompt(text, button, hold)
-    Citizen.CreateThread(function()
-        proppromptdisplayed = false
+    CreateThread(function()
         PropPrompt = nil
         local str = T.PromptLabels.keepPickaxe
         local buttonhash = button or Config.StopMiningKey
@@ -381,16 +368,14 @@ function FPrompt(text, button, hold)
         PromptSetVisible(PropPrompt, false)
         PromptSetHoldMode(PropPrompt, holdbutton)
         PromptRegisterEnd(PropPrompt)
-        sleep = true
     end)
 end
 
 function LMPrompt(text, button, hold)
-    Citizen.CreateThread(function()
+    CreateThread(function()
         UsePrompt = nil
         local str = T.PromptLabels.usePickaxe
         local buttonhash = button or Config.MineRockKey
-        local holdbutton = hold or false
         UsePrompt = PromptRegisterBegin()
         PromptSetControlAction(UsePrompt, buttonhash)
         str = CreateVarString(10, 'LITERAL_STRING', str)
@@ -405,43 +390,27 @@ function LMPrompt(text, button, hold)
 end
 
 function Anim(actor, dict, body, duration, flags, introtiming, exittiming)
-    Citizen.CreateThread(function()
+    CreateThread(function()
         RequestAnimDict(dict)
         local dur = duration or -1
         local flag = flags or 1
         local intro = tonumber(introtiming) or 1.0
         local exit = tonumber(exittiming) or 1.0
-        timeout = 5
+        local timeout = 5
         while (not HasAnimDictLoaded(dict) and timeout > 0) do
             timeout = timeout - 1
             if timeout == 0 then
                 print("Animation Failed to Load")
             end
-            Citizen.Wait(300)
+            Wait(300)
         end
-        TaskPlayAnim(actor, dict, body, intro, exit, dur, flag --[[1 for repeat--]], 1, false, false, false, 0, true)
+        TaskPlayAnim(actor, dict, body, intro, exit, dur, flag, 1, false, 0, false, "", true)
+        Wait(dur)
+        RemoveAnimDict(dict)
     end)
 end
 
-function GetArrayKey(array, value)
-    for k, v in pairs(array) do
-        if v == value then
-            return k
-        end
-    end
-    return false
-end
-
-function InArray(array, item)
-    for k, v in pairs(array) do
-        if v == item then
-            return true
-        end
-    end
-    return false
-end
-
-function round(num, decimals)
+function Round(num, decimals)
     if type(num) ~= "number" then
         return num
     end
