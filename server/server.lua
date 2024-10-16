@@ -22,8 +22,8 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 		local description = T.NotifyLabels.descDurabilityTwo
 		local metadata = { description = description, durability = durability }
 
-		if durability < 20 then     -- less than 20 then add break check
-			local random = math.random(1, 3) -- difficulty to break pickaxe
+		if durability < Config.PickaxeDurabilityThreshold then     -- Less than Config.PickaxeDurabilityThreshold then add break check
+			local random = math.random(Config.PickaxeBreakChanceMin, Config.PickaxeBreakChanceMax) -- Difficulty to break pickaxe
 			if random == 1 then
 				exports.vorp_inventory:subItem(_source, Config.Pickaxe, 1, meta)
 				Core.NotifyObjective(_source, T.NotifyLabels.brokePickaxe, 5000)
