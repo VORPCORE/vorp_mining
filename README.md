@@ -15,7 +15,7 @@ Mining script
 
 ## 3. features
 - Mine rocks and get items 
-- this script uses the tooll with durability "metadata"
+- This script uses the tooll with durability "metadata"
 - Forbid Mining rocks in cities if you want
 - Random messages when minigame fail
 
