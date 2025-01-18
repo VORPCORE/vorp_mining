@@ -19,7 +19,7 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 		TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
 	else
 		local durability = meta.durability - 1
-		local description = T.NotifyLabels.descDurabilityTwo
+		local description = T.NotifyLabels.descDurabilityTwo .. " " .. durability
 		local metadata = { description = description, durability = durability }
 
 		if durability < Config.PickaxeDurabilityThreshold then     -- Less than Config.PickaxeDurabilityThreshold then add break check
