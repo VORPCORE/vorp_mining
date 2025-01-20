@@ -271,10 +271,12 @@ local function removeToolFromPlayer()
     if not tool then
         return
     end
-
+    local ped = PlayerPedId()
     Citizen.InvokeNative(0xED00D72F81CF7278, tool, 1, 1)
     DeleteObject(tool)
-    Citizen.InvokeNative(0x58F7DB5BD8FA2288, PlayerPedId()) -- Cancel Walk Style
+    Citizen.InvokeNative(0x58F7DB5BD8FA2288, ped) -- Cancel Walk Style
+    ClearPedDesiredLocoForModel(ped)
+    ClearPedDesiredLocoMotionType(ped)
 
     tool = nil
 end
