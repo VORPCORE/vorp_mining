@@ -9,17 +9,18 @@ local T = Translation.Langs[Lang]
 
 
 CreateThread(function()
-    repeat Wait(1000) until LocalPlayer.state.IsInSession
+    repeat Wait(5000) until LocalPlayer.state.IsInSession
+
     local str = T.PromptLabels.mineLabel
     MinePrompt = Citizen.InvokeNative(0x04F97DE45A519419)
-    PromptSetControlAction(MinePrompt, Config.MinePromptKey)
-    str = CreateVarString(10, 'LITERAL_STRING', str)
-    PromptSetText(MinePrompt, str)
-    PromptSetEnabled(MinePrompt, true)
-    PromptSetVisible(MinePrompt, true)
-    PromptSetHoldMode(MinePrompt, true)
-    PromptSetGroup(MinePrompt, rockGroup)
-    PromptRegisterEnd(MinePrompt)
+    UiPromptSetControlAction(MinePrompt, Config.MinePromptKey)
+    str = VarString(10, 'LITERAL_STRING', str)
+    UiPromptSetText(MinePrompt, str)
+    UiPromptSetEnabled(MinePrompt, true)
+    UiPromptSetVisible(MinePrompt, true)
+    UiPromptSetHoldMode(MinePrompt, 1000)
+    UiPromptSetGroup(MinePrompt, rockGroup, 0)
+    UiPromptRegisterEnd(MinePrompt)
 end)
 
 
@@ -151,12 +152,12 @@ local function getUnMinedNearbyRock(allowed_model_hashes, player, player_coords)
 end
 
 local function showStartMineBtn()
-    local MiningGroupName = CreateVarString(10, 'LITERAL_STRING', T.PromptLabels.mineDesc)
-    PromptSetActiveGroupThisFrame(rockGroup, MiningGroupName)
+    local MiningGroupName = VarString(10, 'LITERAL_STRING', T.PromptLabels.mineDesc)
+    UiPromptSetActiveGroupThisFrame(rockGroup, MiningGroupName, 0, 0, 0, 0)
 end
 
 local function checkStartMineBtnPressed(rock)
-    if PromptHasHoldModeCompleted(MinePrompt) then
+    if UiPromptHasHoldModeCompleted(MinePrompt) then
         active = true
         local player = PlayerPedId()
         SetCurrentPedWeapon(player, GetHashKey("WEAPON_UNARMED"), true, 0, false, false)
@@ -201,7 +202,7 @@ local function manageStartMinePrompt(restricted_towns, player_coords)
     if isInRestrictedTown(restricted_towns, player_coords) then
         is_promp_enabled = false
     end
-    PromptSetEnabled(MinePrompt, is_promp_enabled)
+    UiPromptSetEnabled(MinePrompt, is_promp_enabled)
 end
 
 CreateThread(function()
@@ -246,13 +247,13 @@ end)
 
 local function releasePlayer()
     if PropPrompt then
-        PromptSetEnabled(PropPrompt, false)
-        PromptSetVisible(PropPrompt, false)
+        UiPromptSetEnabled(PropPrompt, false)
+        UiPromptSetVisible(PropPrompt, false)
     end
 
     if UsePrompt then
-        PromptSetEnabled(UsePrompt, false)
-        PromptSetVisible(UsePrompt, false)
+        UiPromptSetEnabled(UsePrompt, false)
+        UiPromptSetVisible(UsePrompt, false)
     end
 
     FreezeEntityPosition(PlayerPedId(), false)
@@ -260,8 +261,8 @@ end
 
 local function removeMiningPrompt()
     if MinePrompt then
-        PromptSetEnabled(MinePrompt, false)
-        PromptSetVisible(MinePrompt, false)
+        UiPromptSetEnabled(MinePrompt, false)
+        UiPromptSetVisible(MinePrompt, false)
     end
 end
 
@@ -304,7 +305,7 @@ function GoMine(rock)
         if IsControlJustReleased(0, Config.StopMiningKey) or IsPedDeadOrDying(PlayerPedId(), false) then
             rockFinished(rock)
         elseif IsControlJustPressed(0, Config.MineRockKey) then
-            PromptSetEnabled(UsePrompt, false)
+            UiPromptSetEnabled(UsePrompt, false)
             local randomizer = math.random(Config.maxDifficulty, Config.minDifficulty)
             swing = swing + 1
             Anim(ped, 'amb_work@world_human_pickaxe_new@working@male_a@trans', 'pre_swing_trans_after_swing', -1, 0)
@@ -317,11 +318,11 @@ function GoMine(rock)
                 TriggerEvent("vorp:TipRight", minning_fail_txt, 3000)
             end
             Wait(500)
-            PromptSetEnabled(UsePrompt, true)
+            UiPromptSetEnabled(UsePrompt, true)
         end
 
         if swing == swingcount then
-            PromptSetEnabled(UsePrompt, false)
+            UiPromptSetEnabled(UsePrompt, false)
             rockFinished(rock)
         end
         Wait(0)
@@ -339,7 +340,7 @@ function EquipTool(toolhash, prompttext, holdtowork)
     Wait(500)
     FPrompt()
     LMPrompt(prompttext, Config.MineRockKey, holdtowork)
-    ped = PlayerPedId()
+    local ped = PlayerPedId()
     tool = CreateObject(toolhash, GetOffsetFromEntityInWorldCoords(ped, 0.0, 0.0, 0.0), true, true, true)
     AttachEntityToEntity(tool, ped, GetPedBoneIndex(ped, 7966), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 2, 1, 0, 0);
     Citizen.InvokeNative(0x923583741DC87BCE, ped, 'arthur_healthy')
@@ -348,10 +349,10 @@ function EquipTool(toolhash, prompttext, holdtowork)
     ForceEntityAiAndAnimationUpdate(tool, true)
     Citizen.InvokeNative(0x3A50753042B6891B, ped, "PITCH_FORKS")
     Wait(500)
-    PromptSetEnabled(PropPrompt, true)
-    PromptSetVisible(PropPrompt, true)
-    PromptSetEnabled(UsePrompt, true)
-    PromptSetVisible(UsePrompt, true)
+    UiPromptSetEnabled(PropPrompt, true)
+    UiPromptSetVisible(PropPrompt, true)
+    UiPromptSetEnabled(UsePrompt, true)
+    UiPromptSetVisible(UsePrompt, true)
 
     hastool = true
 end
@@ -362,14 +363,14 @@ function FPrompt(text, button, hold)
         local str = T.PromptLabels.keepPickaxe
         local buttonhash = button or Config.StopMiningKey
         local holdbutton = hold or false
-        PropPrompt = PromptRegisterBegin()
-        PromptSetControlAction(PropPrompt, buttonhash)
-        str = CreateVarString(10, 'LITERAL_STRING', str)
-        PromptSetText(PropPrompt, str)
-        PromptSetEnabled(PropPrompt, false)
-        PromptSetVisible(PropPrompt, false)
-        PromptSetHoldMode(PropPrompt, holdbutton)
-        PromptRegisterEnd(PropPrompt)
+        PropPrompt = UiPromptRegisterBegin()
+        UiPromptSetControlAction(PropPrompt, buttonhash)
+        str = VarString(10, 'LITERAL_STRING', str)
+        UiPromptSetText(PropPrompt, str)
+        UiPromptSetEnabled(PropPrompt, false)
+        UiPromptSetVisible(PropPrompt, false)
+        UiPromptSetHoldMode(PropPrompt, holdbutton)
+        UiPromptRegisterEnd(PropPrompt)
     end)
 end
 
@@ -378,16 +379,16 @@ function LMPrompt(text, button, hold)
         UsePrompt = nil
         local str = T.PromptLabels.usePickaxe
         local buttonhash = button or Config.MineRockKey
-        UsePrompt = PromptRegisterBegin()
-        PromptSetControlAction(UsePrompt, buttonhash)
-        str = CreateVarString(10, 'LITERAL_STRING', str)
-        PromptSetText(UsePrompt, str)
-        PromptSetEnabled(UsePrompt, false)
-        PromptSetVisible(UsePrompt, false)
+        UsePrompt = UiPromptRegisterBegin()
+        UiPromptSetControlAction(UsePrompt, buttonhash)
+        str = VarString(10, 'LITERAL_STRING', str)
+        UiPromptSetText(UsePrompt, str)
+        UiPromptSetEnabled(UsePrompt, false)
+        UiPromptSetVisible(UsePrompt, false)
         if hold then
-            PromptSetHoldIndefinitelyMode(UsePrompt)
+            UiPromptSetHoldIndefinitelyMode(UsePrompt)
         end
-        PromptRegisterEnd(UsePrompt)
+        UiPromptRegisterEnd(UsePrompt)
     end)
 end
 

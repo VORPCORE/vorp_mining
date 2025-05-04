@@ -1,9 +1,15 @@
 local Core = exports.vorp_core:GetCore()
 local T = Translation.Langs[Lang]
+local minning_rocks = {}
 
 RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 	local _source = source
 	local miningrock = rock
+
+	if minning_rocks[_source] then
+		return
+	end
+
 	local pickaxe = exports.vorp_inventory:getItem(_source, Config.Pickaxe)
 
 	if not pickaxe then
@@ -22,7 +28,7 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 		local description = T.NotifyLabels.descDurabilityTwo .. " " .. durability
 		local metadata = { description = description, durability = durability }
 
-		if durability < Config.PickaxeDurabilityThreshold then     -- Less than Config.PickaxeDurabilityThreshold then add break check
+		if durability < Config.PickaxeDurabilityThreshold then                            -- Less than Config.PickaxeDurabilityThreshold then add break check
 			local random = math.random(Config.PickaxeBreakChanceMin, Config.PickaxeBreakChanceMax) -- Difficulty to break pickaxe
 			if random == 1 then
 				exports.vorp_inventory:subItem(_source, Config.Pickaxe, 1, meta)
@@ -37,28 +43,36 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 			TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
 		end
 	end
+	minning_rocks[_source] = rock
 end)
 
-local keysx = function(table)
-	local keys = 0
-	for k, v in pairs(table) do
-		keys = keys + 1
-	end
-	return keys
-end
 
 RegisterNetEvent('vorp_mining:addItem', function()
 	local _source = source
 	local chance = math.random(1, 20)
 	local reward = {}
+	local rock = minning_rocks[_source]
+	if not rock then
+		return
+	end
 
-	for k, v in pairs(Config.Items) do
+	-- check distance between player and rock
+	local playerCoords = GetEntityCoords(GetPlayerPed(_source))
+	local rockCoords = rock
+	local distance = #(playerCoords - rockCoords)
+	if distance > 10.0 then
+		return
+	end
+
+	minning_rocks[_source] = nil
+
+	for _, v in ipairs(Config.Items) do
 		if v.chance >= chance then
 			table.insert(reward, v)
 		end
 	end
 
-	local randomtotal = keysx(reward)
+	local randomtotal = #reward
 	if randomtotal == 0 then
 		Core.NotifyObjective(_source, T.NotifyLabels.gotNothing, 5000)
 		return
@@ -75,4 +89,13 @@ RegisterNetEvent('vorp_mining:addItem', function()
 
 	exports.vorp_inventory:addItem(_source, reward[chance2].name, count)
 	Core.NotifyObjective(_source, T.NotifyLabels.yourGot .. reward[chance2].label, 3000)
+end)
+
+
+--on playerdropped
+AddEventHandler('playerDropped', function()
+	local _source = source
+	if minning_rocks[_source] then
+		minning_rocks[_source] = nil
+	end
 end)
