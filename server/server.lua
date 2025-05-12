@@ -45,6 +45,17 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 	minning_rocks[_source] = { coords = rock, count = 0 }
 end)
 
+CreateThread(function()
+	while true do
+		Wait(1000)
+		for k, v in pairs(minning_rocks) do
+			if os.time() - v.time > 60 then
+				minning_rocks[k] = nil
+			end
+		end
+	end
+end)
+
 
 RegisterNetEvent('vorp_mining:addItem', function(max_swings)
 	local _source = source
