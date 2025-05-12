@@ -72,8 +72,6 @@ RegisterNetEvent('vorp_mining:addItem', function(swing, max_swings)
 		minning_rocks[_source] = nil
 	end
 
-	minning_rocks[_source] = nil
-
 	for _, v in ipairs(Config.Items) do
 		if v.chance >= chance then
 			table.insert(reward, v)
