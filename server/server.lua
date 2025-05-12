@@ -11,7 +11,6 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 	end
 
 	local pickaxe = exports.vorp_inventory:getItem(_source, Config.Pickaxe)
-
 	if not pickaxe then
 		TriggerClientEvent("vorp_mining:nopickaxe", _source)
 		Core.NotifyObjective(_source, T.NotifyLabels.notHavePickaxe, 5000)
@@ -43,11 +42,11 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 			TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
 		end
 	end
-	minning_rocks[_source] = rock
+	minning_rocks[_source] = { coords = rock, count = 0 }
 end)
 
 
-RegisterNetEvent('vorp_mining:addItem', function()
+RegisterNetEvent('vorp_mining:addItem', function(swing, max_swings)
 	local _source = source
 	local chance = math.random(1, 20)
 	local reward = {}
@@ -58,10 +57,19 @@ RegisterNetEvent('vorp_mining:addItem', function()
 
 	-- check distance between player and rock
 	local playerCoords = GetEntityCoords(GetPlayerPed(_source))
-	local rockCoords = rock
+	local rockCoords = rock.coords
 	local distance = #(playerCoords - rockCoords)
 	if distance > 10.0 then
 		return
+	end
+
+	if max_swings > Config.MaxSwing then
+		return
+	end
+
+	rock.count = rock.count + swing
+	if rock.count >= max_swings then
+		minning_rocks[_source] = nil
 	end
 
 	minning_rocks[_source] = nil
