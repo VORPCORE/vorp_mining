@@ -312,7 +312,7 @@ function GoMine(rock)
             Anim(ped, 'amb_work@world_human_pickaxe_new@working@male_a@trans', 'pre_swing_trans_after_swing', -1, 0)
             local testplayer = exports["syn_minigame"]:taskBar(randomizer, 7)
             if testplayer == 100 then
-                TriggerServerEvent('vorp_mining:addItem', swing, swingcount)
+                TriggerServerEvent('vorp_mining:addItem', swingcount)
             else
                 local minning_fail_txt_index = math.random(1, #T)
                 local minning_fail_txt = T[minning_fail_txt_index]

@@ -46,7 +46,7 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 end)
 
 
-RegisterNetEvent('vorp_mining:addItem', function(swing, max_swings)
+RegisterNetEvent('vorp_mining:addItem', function(max_swings)
 	local _source = source
 	local chance = math.random(1, 20)
 	local reward = {}
@@ -67,7 +67,7 @@ RegisterNetEvent('vorp_mining:addItem', function(swing, max_swings)
 		return
 	end
 
-	rock.count = rock.count + swing
+	rock.count = rock.count + 1
 	if rock.count >= max_swings then
 		minning_rocks[_source] = nil
 	end
