@@ -275,7 +275,7 @@ local function rockFinished(rock)
     removeToolFromPlayer()
     active = false
     --  forgetRockAsMined(rock)
-    TriggerServerEvent("vorp_lumberjack:resetTable", rock)
+    TriggerServerEvent("vorp_mining:resetTable", rock)
 end
 
 local function EquipTool(toolhash)

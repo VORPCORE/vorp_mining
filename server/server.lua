@@ -13,7 +13,7 @@ local function getKey(coords)
 end
 
 -- reset table
-RegisterNetEvent("vorp_lumberjack:resetTable", function(coords)
+RegisterNetEvent("vorp_mining:resetTable", function(coords)
 	local _source = source
 	if mining_rocks[_source] then
 		if mining_rocks[_source].coords == coords then
