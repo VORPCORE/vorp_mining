@@ -28,6 +28,8 @@ Translation.Langs = {
             notHavePickaxe = "You don't have an pickaxe ",
             descDurabilityOne = "Durability ",
             descDurabilityTwo = "Durability ",
+            Rockoncooldown = "nothing to Mine here",
+
         },
     },
     Italiano = {
@@ -57,6 +59,7 @@ Translation.Langs = {
             notHavePickaxe = "Non hai un piccone ",
             descDurabilityOne = "Durabilità ",
             descDurabilityTwo = "Durabilità ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
     Portugues_PT = {
@@ -86,6 +89,7 @@ Translation.Langs = {
             notHavePickaxe = "Você não tem uma picareta ",
             descDurabilityOne = "Durabilidade ",
             descDurabilityTwo = "Durabilidade ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
     Portugues_BR = {
@@ -115,6 +119,7 @@ Translation.Langs = {
             notHavePickaxe = "Você não tem um machado ",
             descDurabilityOne = "Durabilidade ",
             descDurabilityTwo = "Durabilidade ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
     Francais = {
@@ -144,6 +149,7 @@ Translation.Langs = {
             notHavePickaxe = "Vous n'avez pas de pioche ",
             descDurabilityOne = "Durabilité ",
             descDurabilityTwo = "Durabilité ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
     German = {
@@ -173,6 +179,7 @@ Translation.Langs = {
             notHavePickaxe = "Du hast keine Pikaxt ",
             descDurabilityOne = "Haltbarkeit ",
             descDurabilityTwo = "Haltbarkeit ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
     Spanish = {
@@ -202,6 +209,7 @@ Translation.Langs = {
             notHavePickaxe = "No tienes un pico ",
             descDurabilityOne = "Durabilidad ",
             descDurabilityTwo = "Durabilidad ",
+            Rockoncooldown = "nothing to Mine here",
         },
     },
 }

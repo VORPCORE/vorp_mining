@@ -1,16 +1,45 @@
 local Core = exports.vorp_core:GetCore()
 local T = Translation.Langs[Lang]
-local minning_rocks = {}
 
-RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
+local mining_rocks = {}
+
+local mining_rocks_cooldown = {}
+
+local function getKey(coords)
+	local x = math.floor(coords.x * 100) / 100
+	local y = math.floor(coords.y * 100) / 100
+	local z = math.floor(coords.z * 100) / 100
+	return string.format("%.2f,%.2f,%.2f", x, y, z)
+end
+
+-- reset table
+RegisterNetEvent("vorp_mining:resetTable", function(coords)
+	local _source = source
+	if mining_rocks[_source] then
+		if mining_rocks[_source].coords == coords then
+			mining_rocks[_source] = nil
+		end
+	end
+end)
+
+RegisterServerEvent("vorp_mining:pickaxecheck", function(rock)
 	local _source = source
 	local miningrock = rock
+	-- is player already mining this rock?
 
-	if minning_rocks[_source] then
+	if mining_rocks[_source] then
 		return
 	end
 
-	local pickaxe = exports.vorp_inventory:getItem(_source, Config.Pickaxe)
+	-- is location in cool down?
+	local key <const> = getKey(miningrock)
+	if mining_rocks_cooldown[key] then
+		Core.NotifyObjective(_source, T.NotifyLabels.Rockoncooldown, 5000)
+		TriggerClientEvent("vorp_mining:nopickaxe", _source)
+		return
+	end
+
+	local pickaxe <const> = exports.vorp_inventory:getItem(_source, Config.Pickaxe)
 	if not pickaxe then
 		TriggerClientEvent("vorp_mining:nopickaxe", _source)
 		Core.NotifyObjective(_source, T.NotifyLabels.notHavePickaxe, 5000)
@@ -19,7 +48,7 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 
 	local meta = pickaxe.metadata
 	if not next(meta) then
-		local metadata = { description = T.NotifyLabels.descDurabilityOne, durability = 99 }
+		local metadata = { description = T.NotifyLabels.descDurabilityOne .. " " .. "99", durability = 99 }
 		exports.vorp_inventory:setItemMetadata(_source, pickaxe.id, metadata, 1)
 		TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
 	else
@@ -27,11 +56,11 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 		local description = T.NotifyLabels.descDurabilityTwo .. " " .. durability
 		local metadata = { description = description, durability = durability }
 
-		if durability < Config.PickaxeDurabilityThreshold then                            -- Less than Config.PickaxeDurabilityThreshold then add break check
-			local random = math.random(Config.PickaxeBreakChanceMin, Config.PickaxeBreakChanceMax) -- Difficulty to break pickaxe
+		if durability < Config.PickaxeDurabilityThreshold then
+			local random = math.random(Config.PickaxeBreakChanceMin, Config.PickaxeBreakChanceMax)
 			if random == 1 then
-				exports.vorp_inventory:subItem(_source, Config.Pickaxe, 1, meta)
 				Core.NotifyObjective(_source, T.NotifyLabels.brokePickaxe, 5000)
+				exports.vorp_inventory:subItem(_source, Config.Pickaxe, 1, meta)
 				TriggerClientEvent("vorp_mining:nopickaxe", _source)
 			else
 				exports.vorp_inventory:setItemMetadata(_source, pickaxe.id, metadata, 1)
@@ -42,47 +71,66 @@ RegisterNetEvent("vorp_mining:pickaxecheck", function(rock)
 			TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
 		end
 	end
-	minning_rocks[_source] = { coords = rock, count = 0 }
+	-- player is mining this rock at this location
+	mining_rocks[_source] = { coords = miningrock, count = 0 }
 end)
 
+-- location cooldown
 CreateThread(function()
 	while true do
 		Wait(1000)
-		for k, v in pairs(minning_rocks) do
-			if os.time() - v.time > 60 then
-				minning_rocks[k] = nil
+		for k, v in pairs(mining_rocks_cooldown) do
+			if os.time() - v.time > (Config.CoolDown * 60) then
+				mining_rocks_cooldown[k] = nil
 			end
 		end
 	end
 end)
 
 
-RegisterNetEvent('vorp_mining:addItem', function(max_swings)
+RegisterServerEvent('vorp_mining:addItem', function(max_swings)
+	math.randomseed(os.time())
 	local _source = source
-	local chance = math.random(1, 20)
-	local reward = {}
-	local rock = minning_rocks[_source]
-	if not rock then
+
+	-- is player mining this rock?
+	local miningrock = mining_rocks[_source]
+	if not miningrock then
 		return
 	end
 
-	-- check distance between player and rock
-	local playerCoords = GetEntityCoords(GetPlayerPed(_source))
-	local rockCoords = rock.coords
-	local distance = #(playerCoords - rockCoords)
+	-- is location in cool down?
+	local key <const> = getKey(miningrock.coords)
+	if mining_rocks_cooldown[key] then
+		Core.NotifyObjective(_source, "nothing to mine here", 5000)
+		return
+	end
+
+	-- is player near the location?
+	local rock_coords = miningrock.coords
+	local player_coords = GetEntityCoords(GetPlayerPed(_source))
+	local distance = #(rock_coords - player_coords)
 	if distance > 10.0 then
 		return
 	end
 
+	-- max swings cant be more than config
 	if max_swings > Config.MaxSwing then
 		return
 	end
 
-	rock.count = rock.count + 1
-	if rock.count >= max_swings then
-		minning_rocks[_source] = nil
+	miningrock.count = miningrock.count + 1
+	-- if max swings is reached
+	if miningrock.count >= max_swings then
+		-- remove player from mining table
+		mining_rocks[_source] = nil
+		-- start cool down after all swings
+		if not mining_rocks_cooldown[key] then
+			mining_rocks_cooldown[key] = { time = os.time() }
+		end
 	end
 
+	local chance = math.random(1, Config.ChanceRange)
+	local reward = {}
 	for _, v in ipairs(Config.Items) do
 		if v.chance >= chance then
 			table.insert(reward, v)
@@ -95,13 +143,11 @@ RegisterNetEvent('vorp_mining:addItem', function(max_swings)
 		return
 	end
 
-	local chance2 = math.random(1, randomtotal) -- if 0 the interval will be empty since minimum is 1
+	local chance2 = math.random(1, randomtotal)
 	local count = math.random(1, reward[chance2].amount)
-
-	local canCarryItem = exports.vorp_inventory:canCarryItem(_source, reward[chance2].name, count)
-	if not canCarryItem then
-		Core.NotifyObjective(_source, T.NotifyLabels.fullBag .. reward[chance2].label, 3000)
-		return
+	local canCarry = exports.vorp_inventory:canCarryItem(_source, reward[chance2].name, count)
+	if not canCarry then
+		return Core.NotifyObjective(_source, T.NotifyLabels.fullBag .. reward[chance2].label, 5000)
 	end
 
 	exports.vorp_inventory:addItem(_source, reward[chance2].name, count)
@@ -109,10 +155,10 @@ RegisterNetEvent('vorp_mining:addItem', function(max_swings)
 end)
 
 
---on playerdropped
 AddEventHandler('playerDropped', function()
 	local _source = source
-	if minning_rocks[_source] then
-		minning_rocks[_source] = nil
+	-- player left the server, remove from mining table if it was mining
+	if mining_rocks[_source] then
+		mining_rocks[_source] = nil
 	end
 end)
