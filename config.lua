@@ -21,6 +21,7 @@ Config.minDifficulty = 4000
 Config.maxDifficulty = 2700
 ---------------------------
 Config.CoolDown = 60       -- 60 minute how long to wait after chopping a tree to chop again
+Config.ChanceRange = 20  -- Maximum value for item chance rolls (1 to 20)
 
 Config.TownRestrictions = {
     { name = 'Annesburg',  mine_allowed = true },
