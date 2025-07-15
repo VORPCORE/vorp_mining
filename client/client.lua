@@ -323,7 +323,6 @@ local function goMine(rock)
             local randomizer = math.random(Config.maxDifficulty, Config.minDifficulty)
             UiPromptSetEnabled(UsePrompt, false)
             swing = swing + 1
-            print(swing, swingcount)
             local ped = PlayerPedId()
             Anim(ped, 'amb_work@world_human_pickaxe_new@working@male_a@trans', 'pre_swing_trans_after_swing', -1, 0)
             local testplayer = exports["syn_minigame"]:taskBar(randomizer, 7)
