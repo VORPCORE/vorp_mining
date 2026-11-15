@@ -12,9 +12,9 @@ Mining Script for VORP Core
 ## Features
 - Mine rocks and get items 
 - Use the pickaxe item to hold it, use it again to put it away
-- This script uses the tooll with durability "metadata"
+- This script uses the tool with durability "metadata"
 - Forbid Mining rocks in cities if you want
-- Random messages when minigame fail
+- Random messages when the skill bar fails
 
 ## Dependencies
 - [VORP Core](https://github.com/VORPCORE/vorp-core-lua)
