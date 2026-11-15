@@ -43,6 +43,7 @@ RegisterServerEvent("vorp_mining:pickaxecheck", function(rock)
 	if not pickaxe then
 		TriggerClientEvent("vorp_mining:nopickaxe", _source)
 		Core.NotifyObjective(_source, T.NotifyLabels.notHavePickaxe, 5000)
+		TriggerClientEvent("vorp_mining:removePickaxe", _source)
 		return
 	end
 
@@ -62,6 +63,7 @@ RegisterServerEvent("vorp_mining:pickaxecheck", function(rock)
 				Core.NotifyObjective(_source, T.NotifyLabels.brokePickaxe, 5000)
 				exports.vorp_inventory:subItem(_source, Config.Pickaxe, 1, meta)
 				TriggerClientEvent("vorp_mining:nopickaxe", _source)
+				TriggerClientEvent("vorp_mining:removePickaxe", _source)
 			else
 				exports.vorp_inventory:setItemMetadata(_source, pickaxe.id, metadata, 1)
 				TriggerClientEvent("vorp_mining:pickaxechecked", _source, miningrock)
@@ -154,6 +156,12 @@ RegisterServerEvent('vorp_mining:addItem', function(max_swings)
 	Core.NotifyObjective(_source, T.NotifyLabels.yourGot .. reward[chance2].label, 3000)
 end)
 
+
+-- use the pickaxe item to hold it or put it away
+exports.vorp_inventory:registerUsableItem(Config.Pickaxe, function(data)
+	exports.vorp_inventory:closeInventory(data.source)
+	TriggerClientEvent("vorp_mining:togglePickaxe", data.source)
+end, GetCurrentResourceName())
 
 AddEventHandler('playerDropped', function()
 	local _source = source
