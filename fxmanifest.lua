@@ -14,7 +14,7 @@ client_script 'client/client.lua'
 server_script 'server/server.lua'
 
 dependencies {
-   'syn_minigame'
+   'vorp_lib'
 }
 
 version '1.2'
